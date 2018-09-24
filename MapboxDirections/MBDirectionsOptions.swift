@@ -231,6 +231,9 @@ open class DirectionsOptions: NSObject, NSSecureCoding, NSCopying {
         return true
     }
     
+    /// The isOSRMApi Boolean value is to frame a correct set of url params with respect to Mapbox or OSRM.
+    internal var isOSRMApi: Bool = false
+    
     // MARK: NSCopying
     @objc open func copy(with zone: NSZone? = nil) -> Any {
         let copy = type(of: self).init(waypoints: waypoints, profileIdentifier: profileIdentifier)
@@ -433,22 +436,27 @@ open class DirectionsOptions: NSObject, NSSecureCoding, NSCopying {
         var params: [URLQueryItem] = [
             URLQueryItem(name: "geometries", value: String(describing: shapeFormat)),
             URLQueryItem(name: "overview", value: String(describing: routeShapeResolution)),
-            URLQueryItem(name: "steps", value: String(includesSteps)),
-            URLQueryItem(name: "language", value: locale.identifier)
+            URLQueryItem(name: "steps", value: String(includesSteps))
         ]
         
+        if !isOSRMApi {
+            params.append(
+                URLQueryItem(name: "language", value: locale.identifier)
+            )
+        }
+        
         let mustArriveOnDrivingSide = !waypoints.filter { !$0.allowsArrivingOnOppositeSide }.isEmpty
-        if mustArriveOnDrivingSide {
+        if mustArriveOnDrivingSide && !isOSRMApi {
             let approaches = waypoints.map { $0.allowsArrivingOnOppositeSide ? "unrestricted" : "curb" }
             params.append(URLQueryItem(name: "approaches", value: approaches.joined(separator: ";")))
         }
         
-        if includesSpokenInstructions {
+        if includesSpokenInstructions && !isOSRMApi {
             params.append(URLQueryItem(name: "voice_instructions", value: String(includesSpokenInstructions)))
             params.append(URLQueryItem(name: "voice_units", value: String(describing: distanceMeasurementSystem)))
         }
         
-        if includesVisualInstructions {
+        if includesVisualInstructions && !isOSRMApi {
             params.append(URLQueryItem(name: "banner_instructions", value: String(includesVisualInstructions)))
         }
         
@@ -472,7 +480,7 @@ open class DirectionsOptions: NSObject, NSSecureCoding, NSCopying {
             params.append(URLQueryItem(name: "annotations", value: attributesStrings))
         }
         
-        if !waypoints.compactMap({ $0.name }).isEmpty {
+        if !waypoints.compactMap({ $0.name }).isEmpty && !isOSRMApi {
             let names = waypoints.map { $0.name ?? "" }.joined(separator: ";")
             params.append(URLQueryItem(name: "waypoint_names", value: names))
         }

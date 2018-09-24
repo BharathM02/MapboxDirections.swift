@@ -72,14 +72,18 @@ open class RouteOptions: DirectionsOptions {
         coder.encode(roadClassesToAvoid.description, forKey: "roadClassesToAvoid")
     }
     
-    /**
-     A Boolean value that indicates whether a routing is going to use Mapbox's api (or) osrm's api.
-    */
-    public var isOSRMRouting: Bool = false
-    
     public var server: String = "route"
     
     public var version: String = "v1"
+    
+    override var isOSRMApi: Bool {
+        set (newValue) {
+            super.isOSRMApi = newValue
+        }
+        get {
+            return super.isOSRMApi
+        }
+    }
     
     /**
      The path of the request URL, not including the hostname or any parameters.
@@ -88,7 +92,7 @@ open class RouteOptions: DirectionsOptions {
         assert(!queries.isEmpty, "No query")
         
         let queryComponent = queries.joined(separator: ";")
-        return isOSRMRouting ? "\(self.server)/\(self.version)/\(profileIdentifier.rawValue)/\(queryComponent)" : "directions/v5/\(profileIdentifier.rawValue)/\(queryComponent).json"
+        return isOSRMApi ? "\(server)/\(version)/\(profileIdentifier.rawValue)/\(queryComponent)" : "directions/v5/\(profileIdentifier.rawValue)/\(queryComponent).json"
     }
 
     /**

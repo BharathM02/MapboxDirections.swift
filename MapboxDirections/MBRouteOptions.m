@@ -5,6 +5,6 @@ MBDirectionsProfileIdentifier const MBDirectionsProfileIdentifierAutomobile     
 MBDirectionsProfileIdentifier const MBDirectionsProfileIdentifierAutomobileAvoidingTraffic  = @"mapbox/driving-traffic";
 MBDirectionsProfileIdentifier const MBDirectionsProfileIdentifierCycling                    = @"mapbox/cycling";
 MBDirectionsProfileIdentifier const MBDirectionsProfileIdentifierWalking                    = @"mapbox/walking";
-MBDirectionsProfileIdentifier const MBOSRMDirectionsProfileIdentifierAutomobile                 = @"driving";
-MBDirectionsProfileIdentifier const MBOSRMDirectionsProfileIdentifierCycling                    = @"cycle";
-MBDirectionsProfileIdentifier const MBOSRMDirectionsProfileIdentifierWalking                    = @"foot";
+MBDirectionsProfileIdentifier const OSRMDirectionsProfileIdentifierAutomobile                 = @"driving";
+MBDirectionsProfileIdentifier const OSRMDirectionsProfileIdentifierCycling                    = @"cycle";
+MBDirectionsProfileIdentifier const OSRMDirectionsProfileIdentifierWalking                    = @"foot";

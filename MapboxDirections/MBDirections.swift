@@ -128,25 +128,36 @@ open class Directions: NSObject {
     internal var apiEndpoint: URL
     
     /// The Mapbox access token to associate the request with.
-    internal let accessToken: String?
+    internal var accessToken: String?
     
-    /// The
-    public var isEncodeURL: Bool = false
+    /// The shouldEncodeURL Boolean is allow to encode the HTTP request url
+    public var shouldEncodeURL: Bool = false
+    
+    /// The isOSRMApi boolean value frame the request with respect to OSRM or Mapbox
+    public var isOSRMApi: Bool = false
     
     /**
      Initializes a newly created directions object with an optional access token and host.
      
      - parameter accessToken: A Mapbox [access token](https://www.mapbox.com/help/define-access-token/). If an access token is not specified when initializing the directions object, it should be specified in the `MGLMapboxAccessToken` key in the main application bundle’s Info.plist.
-     - parameter schema: An optional url schema to the server API make secure or non-secure connection.
      - parameter host: An optional hostname to the server API. The [Mapbox Directions API](https://www.mapbox.com/api-documentation/?language=Swift#directions) endpoint is used by default.
      */
-    @objc public init(accessToken: String?, schema: String?, host: String?) {
-        if accessToken != nil {
-            let accessToken = accessToken ?? defaultAccessToken
-            assert(accessToken != nil && !accessToken!.isEmpty, "A Mapbox access token is required. Go to <https://www.mapbox.com/studio/account/tokens/>. In Info.plist, set the MGLMapboxAccessToken key to your access token, or use the Directions(accessToken:host:) initializer.")
-        }
+    @objc public convenience init(accessToken: String?, host: String?) {
+        self.init(schema: "https", host: host, isOSRMApi: false)
+        let accessToken = accessToken ?? defaultAccessToken
+        assert(accessToken != nil && !accessToken!.isEmpty, "A Mapbox access token is required. Go to <https://www.mapbox.com/studio/account/tokens/>. In Info.plist, set the MGLMapboxAccessToken key to your access token, or use the Directions(accessToken:host:) initializer.")
         self.accessToken = accessToken
-        
+    }
+    
+    /**
+     Initializes a newly created directions object with an optional schema and host.
+     
+     - parameter schema: An optional param that denotes whether to make secure or non-secure connection to API. ( http or https )
+     - parameter host: An optional hostname to the server API. [Mapbox Directions API](https://www.mapbox.com/api-documentation/?language=Swift#directions) endpoint is used by default.
+     - parameter isOSRMApi: A Boolean param that desides which type of Api call is.
+     */
+    @objc public init(schema: String?, host: String?, isOSRMApi: Bool) {
+        self.isOSRMApi = isOSRMApi
         if let host = host, !host.isEmpty {
             var baseURLComponents = URLComponents()
             baseURLComponents.scheme = schema ?? "https"
@@ -159,16 +170,6 @@ open class Directions: NSObject {
     }
     
     /**
-     Initializes a newly created directions object with an optional host.
-     
-     - parameter schema: An optional url schema to the server API make secure or non-secure connection.
-     - parameter host: An optional hostname to the server API. The [OSRM Directions API](http://router.project-osrm.org//{service}/{version}/{profile}/{coordinates}[.{format}]?option=value&option=value) endpoint is used by default.
-     */
-    @objc public convenience init(schema: String?, host: String?) {
-        self.init(accessToken: nil, schema: schema, host: host)
-    }
-    
-    /**
      Initializes a newly created directions object with an optional access token.
      
      The directions object sends requests to the [Mapbox Directions API](https://www.mapbox.com/api-documentation/?language=Swift#directions) endpoint.
@@ -176,7 +177,7 @@ open class Directions: NSObject {
      - parameter accessToken: A Mapbox [access token](https://www.mapbox.com/help/define-access-token/). If an access token is not specified when initializing the directions object, it should be specified in the `MGLMapboxAccessToken` key in the main application bundle’s Info.plist.
      */
     @objc public convenience init(accessToken: String?) {
-        self.init(accessToken: accessToken, schema: nil, host: nil)
+        self.init(accessToken: accessToken, host: nil)
     }
     
     // MARK: Getting Directions
@@ -194,7 +195,7 @@ open class Directions: NSObject {
      */
     @objc(calculateDirectionsWithOptions:completionHandler:)
     @discardableResult open func calculate(_ options: RouteOptions, completionHandler: @escaping RouteCompletionHandler) -> URLSessionDataTask {
-        isOSRMRoute = options.isOSRMRouting
+        options.isOSRMApi = isOSRMApi
         let url = self.url(forCalculating: options)
         let task = dataTask(with: url, completionHandler: { (json) in
             let response = options.response(from: json)
@@ -212,8 +213,6 @@ open class Directions: NSObject {
         task.resume()
         return task
     }
-    
-    var isOSRMRoute = false
     
     /**
      Begins asynchronously calculating a match using the given options and delivers the results to a closure.
@@ -331,14 +330,16 @@ open class Directions: NSObject {
     @objc(URLForCalculatingDirectionsWithOptions:)
     open func url(forCalculating options: DirectionsOptions) -> URL {
         var params = options.params
-        params = isOSRMRoute ? params : params + [
-            URLQueryItem(name: "access_token", value: accessToken),
-        ]
+        if !isOSRMApi {
+            params = params + [
+                URLQueryItem(name: "access_token", value: accessToken),
+            ]
+        }
         
         let unparameterizedURL = URL(string: options.path, relativeTo: apiEndpoint)!
         var components = URLComponents(url: unparameterizedURL, resolvingAgainstBaseURL: true)!
         components.queryItems = params
-        return self.isEncodeURL ? encodedURL(components.url!) : components.url!
+        return self.shouldEncodeURL ? encodedURL(components.url!) : components.url!
     }
     
     /**
