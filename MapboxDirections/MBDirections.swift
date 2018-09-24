@@ -132,7 +132,7 @@ open class Directions: NSObject {
     
     /// The shouldEncodeURL Boolean is allow to encode the HTTP request url
     public var shouldEncodeURL: Bool = false
-    
+        
     /// The isOSRMApi boolean value frame the request with respect to OSRM or Mapbox
     public var isOSRMApi: Bool = false
     
@@ -142,11 +142,19 @@ open class Directions: NSObject {
      - parameter accessToken: A Mapbox [access token](https://www.mapbox.com/help/define-access-token/). If an access token is not specified when initializing the directions object, it should be specified in the `MGLMapboxAccessToken` key in the main application bundle’s Info.plist.
      - parameter host: An optional hostname to the server API. The [Mapbox Directions API](https://www.mapbox.com/api-documentation/?language=Swift#directions) endpoint is used by default.
      */
-    @objc public convenience init(accessToken: String?, host: String?) {
-        self.init(schema: "https", host: host, isOSRMApi: false)
+    @objc public init(accessToken: String?, host: String?) {
         let accessToken = accessToken ?? defaultAccessToken
         assert(accessToken != nil && !accessToken!.isEmpty, "A Mapbox access token is required. Go to <https://www.mapbox.com/studio/account/tokens/>. In Info.plist, set the MGLMapboxAccessToken key to your access token, or use the Directions(accessToken:host:) initializer.")
         self.accessToken = accessToken
+        
+        if let host = host, !host.isEmpty {
+            var baseURLComponents = URLComponents()
+            baseURLComponents.scheme = "https"
+            baseURLComponents.host = host
+            apiEndpoint = baseURLComponents.url!
+        } else {
+            apiEndpoint = URL(string:(defaultApiEndPointURLString ?? "https://api.mapbox.com"))!
+        }
     }
     
     /**
@@ -156,17 +164,17 @@ open class Directions: NSObject {
      - parameter host: An optional hostname to the server API. [Mapbox Directions API](https://www.mapbox.com/api-documentation/?language=Swift#directions) endpoint is used by default.
      - parameter isOSRMApi: A Boolean param that desides which type of Api call is.
      */
-    @objc public init(schema: String?, host: String?, isOSRMApi: Bool) {
+    @objc public init(scheme: String?, host: String?, isOSRMApi: Bool) {
         self.isOSRMApi = isOSRMApi
+        
         if let host = host, !host.isEmpty {
             var baseURLComponents = URLComponents()
-            baseURLComponents.scheme = schema ?? "https"
+            baseURLComponents.scheme = scheme ?? "https"
             baseURLComponents.host = host
             apiEndpoint = baseURLComponents.url!
         } else {
             apiEndpoint = URL(string:(defaultApiEndPointURLString ?? "https://api.mapbox.com"))!
         }
-        
     }
     
     /**
@@ -313,7 +321,7 @@ open class Directions: NSObject {
     /**
      The HTTP URL is encoded to raise secure connection.
     */
-    internal func encodedURL(_ url: URL) -> URL {
+    internal func encodeURL(_ url: URL) -> URL {
         let allowedCharactersInString = "*-._/%:"
         var allowedCharacterSet = CharacterSet.alphanumerics
         allowedCharacterSet.insert(charactersIn: allowedCharactersInString)
@@ -339,7 +347,7 @@ open class Directions: NSObject {
         let unparameterizedURL = URL(string: options.path, relativeTo: apiEndpoint)!
         var components = URLComponents(url: unparameterizedURL, resolvingAgainstBaseURL: true)!
         components.queryItems = params
-        return self.shouldEncodeURL ? encodedURL(components.url!) : components.url!
+        return self.shouldEncodeURL ? encodeURL(components.url!) : components.url!
     }
     
     /**
